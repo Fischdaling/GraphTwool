@@ -1,119 +1,195 @@
 package org.spengergasse;
 
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 
 public class Calc {
-    private final GraphTool graphTool;
-    ArrayList<ArrayList<Point>> kanten;
-    ArrayList<Point> knoten;
-    private ArrayList<Integer> index1;
-    private ArrayList<Integer> index2;
-    private int[][][] potenzMatrix;
+    private  GraphTool graphTool;
+    private  int[][][] potenzMatrix;
+    private  int[][] adjacentMatrix;
+    private  int[] exzentrizitaeten;
+    private  int knotenCounter;
+    private  ArrayList<Integer> artikulationen;
+    private int[] exzentritaeten;
 
     public Calc(GraphTool graphTool) {
         this.graphTool = graphTool;
-
-        index1 = graphTool.getIndex1();
-        index2 = graphTool.getIndex2();
-
-        this.knoten = graphTool.getKnoten();
-        this.kanten = graphTool.getKanten();
-        potenzMatrix = new int[getKnotenCounter()][getKnotenCounter()][getKnotenCounter()];
-        printMatrix(AMatrix());
-        AXMatrix();
-        System.out.println();
-        printMatrix(DMatrix(AMatrix(),potenzMatrix));
-    }
-
-    public int getKnotenCounter() {
-        return graphTool.getKnotenCounter();
-    }
-
-    public int getKantenCounter() {
-        return graphTool.getKantenCounter();
-    }
-
-    public int[][] AMatrix() {
-
-            int[][] AMatrix = new int[getKnotenCounter()][getKnotenCounter()];
-
-            for (int i = 0; i < getKnotenCounter(); i++) {
-                for (int j = 0; j < getKnotenCounter(); j++) {
-                    AMatrix[i][j] = 0;
-                }
-            }
-        if (!graphTool.isFile()){
-            for (int i = 0; i < getKantenCounter(); i++) {
-
-                AMatrix[index1.get(i)][index2.get(i)] = 1;
-                AMatrix[index2.get(i)][index1.get(i)] = 1;
-            }
-        }else {
-            for (int i = 0; i < getKnotenCounter(); i++) {
-                for (int j = 0; j < getKnotenCounter(); j++) {
-                    AMatrix[i][j] = graphTool.getGraph().get(i).get(j);
-                }
-            }
+        knotenCounter = graphTool.getKnotenCounter();
+        if (knotenCounter == 0) {
+            throw new GraphException("Keine Knoten gefunden");
         }
-        return AMatrix;
+
+        adjacentMatrix = graphTool.getAMatrix();
+
+        artikulationen = new ArrayList<>();
+        potenzMatrix = new int[knotenCounter][knotenCounter][knotenCounter];
+
+        exzentrizitaeten = distanz();
+
+        System.out.println(this);
     }
 
-    public int[][] AXMatrix() {
-        int[][] AXMatrix = AMatrix();
-        int[][] OldAXMatrix = AMatrix();
-//        int[][] DMatrix = AMatrix();
-//        int[][] OldDMatrix = AMatrix();
-//        System.out.println("DMatrix");
-//        printMatrix(DMatrix);
-        for (int k = 0; k < getKnotenCounter(); k++) {
-            System.out.println("Potenzmatrix " + k + ":");
 
-            int[][] tempMatrix = new int[getKnotenCounter()][getKnotenCounter()];
+    @Override
+    public String toString() {
+        StringBuilder str = new StringBuilder();
+        str.append("A:").append("\n").append(matrixToString(adjacentMatrix)).append("\n");
+        str.append(potenzMatrixToString());
+        str.append("Exzentizitaeten").append("\n").append(arrayToString(exzentrizitaeten)).append("\n");
+        str.append("Durchmesser ").append(durchmesser()).append("\n");
+        str.append("Radius ").append(radius()).append("\n");
+        str.append("Zentrum ").append(convertNumbersToLetters(zentrum())).append("\n");
+        str.append("Weg Matrix").append("\n").append(matrixToString(WMatrix(adjacentMatrix))).append("\n");
+        str.append("Distance Matrix").append("\n").append(matrixToString(DMatrix(adjacentMatrix))).append("\n");
+        str.append("Komponenten").append("\n").append(convertNumbersToLetters2D(komponentenSuche(WMatrix(adjacentMatrix)))).append("\n");
+        str.append("Artikulationen").append("\n").append(convertNumbersToLetters(artikulationen(adjacentMatrix))).append("\n");
+        str.append("Bruecken").append("\n").append(convertNumbersToLetters2D(bruecken(adjacentMatrix))).append("\n");
+        str.append("Blöcke").append("\n").append(convertNumbersToLetters2D(bloecke())).append("\n");
+        str.append("Has Euler Zyklus: ").append(hasEulerianPathOrCycle()).append("\n");
+        str.append("Is strongly connected: ").append(isZusammenHaengend()).append("\n");
+        return str.toString();
+    }
 
-            /** PotenzMatrix **/
-            for (int i = 0; i < getKnotenCounter(); i++) {
-                for (int j = 0; j < getKnotenCounter(); j++) {
-                    for (int x = 0; x < getKnotenCounter(); x++) {
+    public int[][] getAdjacentMatrix() {
+        return adjacentMatrix;
+    }
+
+    private String matrixToString(int[][] matrix) {
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < knotenCounter; i++) {
+            for (int j = 0; j < knotenCounter; j++) {
+                str.append(matrix[i][j] == -9 ? "∞" : matrix[i][j]);
+                if (j != knotenCounter - 1) str.append(",");
+            }
+            str.append("\n");
+        }
+        return str.toString();
+    }
+
+    private String potenzMatrixToString() {
+        StringBuilder str = new StringBuilder();
+        for (int i = 2; i < knotenCounter; i++) {
+            str.append("A").append(i).append("\n");
+            for (int j = 0; j < knotenCounter; j++) {
+                for (int k = 0; k < knotenCounter; k++) {
+                    if (potenzMatrix[i][j][k] < 10) str.append(0);
+                    str.append(potenzMatrix[i][j][k]);
+                    if (k != knotenCounter - 1) str.append(",");
+                }
+                str.append("\n");
+            }
+            str.append("\n");
+        }
+        return str.toString();
+    }
+
+    private String arrayToString(int[] array) {
+        if (array == null) return null;
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < knotenCounter; i++) {
+            char letter = (char) (i + 'A');
+            str.append(letter).append(":").append(array[i]);
+            if (i != knotenCounter - 1) str.append(",");
+        }
+        return str.toString();
+    }
+
+    private String convertNumbersToLetters(ArrayList<Integer> list) {
+        if (list == null) return null;
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < list.size(); i++) {
+            int num = list.get(i);
+            char letter = (char) (num + 'A');
+            result.append(letter);
+            if (i != list.size() - 1) result.append(", ");
+        }
+        return result.toString();
+    }
+
+    private String convertNumbersToLetters2D(ArrayList<ArrayList<Integer>> list) {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < list.size(); i++) {
+            ArrayList<Integer> innerList = list.get(i);
+            result.append("[");
+            for (int j = 0; j < innerList.size(); j++) {
+                int num = innerList.get(j);
+                char letter = (char) (num + 'A');
+                result.append(letter);
+                if (j != innerList.size() - 1) result.append(", ");
+            }
+            result.append("]");
+            if (i != list.size() - 1) result.append(", ");
+        }
+        return result.toString();
+    }
+
+
+    int[][][] potenzMatrix(int[][] matrix) {
+        int[][] AXMatrix = matrix;
+        int[][] OldAXMatrix = matrix;
+        for (int k = 2; k < matrix.length; k++) {
+            int[][] tempMatrix = new int[matrix.length][matrix.length];
+            for (int i = 0; i < matrix.length; i++) {
+                for (int j = 0; j < matrix.length; j++) {
+                    for (int x = 0; x < matrix.length; x++) {
                         tempMatrix[i][j] += OldAXMatrix[i][x] * AXMatrix[x][j];
-
                     }
                 }
             }
-//            /** Distanz Matrix **/
-//            for (int i = 0; i < getKnotenCounter(); i++) {
-//                for (int j = 0; j < getKnotenCounter(); j++) {
-////                    if(AXMatrix[i][j] == 0) DMatrix[i][j] = -9;
-//                    if(j==i)DMatrix[i][j] = 0;
-//                        if (OldAXMatrix[i][j] != tempMatrix[i][j]) {
-//                            if (OldDMatrix[i][j] > k) {
-//                                DMatrix[i][j] = k+1; //TODO NONOWORKING -9 stays Rest IST OK
-//
-//                            }
-//                        }
-//                }
-//            }
-
             OldAXMatrix = tempMatrix;
-//            OldDMatrix = DMatrix;
-            printMatrix(OldAXMatrix);
-//            System.out.println("DMatrix k="+k);
-//            printMatrix(DMatrix);
-        potenzMatrix[k] = OldAXMatrix;
+            potenzMatrix[k] = OldAXMatrix;
+        }
+        return potenzMatrix;
+    }
 
+    public int[][] WMatrix(int[][] AMatrix) {
+        int[][][] potenzMatrix = potenzMatrix(AMatrix);
+        int n = AMatrix.length;
+        int[][] wegMatrix = new int[n][n];
+
+        for (int i = 0; i < n; i++) {
+            Arrays.fill(wegMatrix[i], 0);
+            wegMatrix[i][i] = 1;
+            for (int j = 0; j < n; j++) {
+                if (i != j && AMatrix[i][j] != 0) {
+                    wegMatrix[i][j] = 1;
+                }
+            }
         }
 
-        return OldAXMatrix;
+        int k = 2;
+        while (true) {
+            boolean changed = false;
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    if (wegMatrix[i][j] == 0) {
+                        boolean found = false;
+                        for (int p = 2; p <= k; p++) {
+                            if (potenzMatrix[p][i][j] != 0) {
+                                wegMatrix[i][j] = 1;
+                                changed = true;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) wegMatrix[i][j] = 0;
+                    }
+                }
+            }
+            if (k == n || !changed) break;
+            k++;
+        }
+
+        return wegMatrix;
     }
-//TODO Not Working yet fix I want to calculate the Distance Matrix
-    public static int[][] DMatrix(int[][] matrix, int[][][] potenzMatrix) {
+
+    public int[][] DMatrix(int[][] matrix ) {
         /** INIT **/
+        int[][][] potenzMatrix = potenzMatrix(matrix);
         int n = matrix.length;
         int[][] distanceMatrix = new int[n][n];
 
         for (int i = 0; i < n; i++) {
-            Arrays.fill(distanceMatrix[i], -9);
+            Arrays.fill(distanceMatrix[i], -9); // -9 Statt Unendlich
             distanceMatrix[i][i] = 0;
         }
 
@@ -125,41 +201,257 @@ public class Calc {
             }
         }
 
-        int k = 2;
-        /** Change Loop **/
-        while (true) {
-            boolean changed = false;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < n; j++) {
-                    if (matrix[i][j] != 0 && distanceMatrix[i][j] == -9) {
-                        boolean found = false;
-                        for (int p = 2; p <= k; p++) {
-                            if (potenzMatrix[k][i][j] != 0) {
-                                distanceMatrix[i][j] = p;
-                                changed = true;
-                                found = true;
-                                break;
+            int k = 2;
+            while (true) {
+                boolean changed = false;
+                for (int i = 0; i < n; i++) {
+                    for (int j = 0; j < n; j++) {
+                        if (distanceMatrix[i][j] == -9) {
+                            boolean found = false;
+                            for (int p = 2; p <= k; p++) {
+                                if (potenzMatrix[p][i][j] != 0) {
+                                    distanceMatrix[i][j] = p;
+                                    changed = true;
+                                    found = true;
+                                    break;
+                                }
+
                             }
+                            if (!found) distanceMatrix[i][j] = -9;
                         }
-                        if (!found) distanceMatrix[i][j] = -9;
                     }
                 }
+                if (k == n || !changed) {break;}
+                k++;
             }
-            if (k == n || !changed) {
-                break;
-            }
-            k++;
-        }
-
-        return distanceMatrix;
+            return distanceMatrix;
     }
 
-    private void printMatrix(int[][] matrix) {
-        for (int i = 0; i < getKnotenCounter(); i++) {
-            for (int j = 0; j < getKnotenCounter(); j++) {
-                System.out.print(matrix[i][j] + " ");
+    public int[] distanz(){
+        if (!isZusammenHaengend())
+            return null;
+        int[] distanz = new int[knotenCounter];
+        for (int i = 0; i < knotenCounter; i++) {
+            for (int j = 0; j < knotenCounter; j++) {
+                if (distanz[i]< DMatrix(adjacentMatrix)[i][j]){
+                    distanz[i] = DMatrix(adjacentMatrix)[i][j];
+                }
             }
-            System.out.println();
+        }
+        this.exzentritaeten = distanz;
+        return distanz;
+    }
+
+    public Integer durchmesser(){
+        if (!isZusammenHaengend())
+            return null;
+        int distanz = 0;
+        for (int i = 0; i < knotenCounter; i++) {
+           if (exzentritaeten[i] > distanz) distanz = exzentritaeten[i];
+        }
+        return distanz;
+    }
+
+    public Integer radius(){
+        if (!isZusammenHaengend())
+            return null;
+        int radius = Integer.MAX_VALUE;
+        for (int i = 0; i < knotenCounter; i++) {
+            if (exzentritaeten[i] < radius) radius = exzentritaeten[i];
+        }
+
+        return radius;
+    }
+
+    public ArrayList<Integer> zentrum(){
+        if (!isZusammenHaengend())
+            return null;
+        ArrayList<Integer> zentum = new ArrayList<>();
+        for (int i = 0; i < knotenCounter; i++) {
+            if (exzentritaeten[i] == radius()) zentum.add(i);
+        }
+
+        return zentum;
+    }
+
+
+    public ArrayList<ArrayList<Integer>> komponentenSuche(int[][] wegMatrix) {
+        ArrayList<ArrayList<Integer>> komponenten = new ArrayList<>();
+
+        for (int i = 0; i < wegMatrix.length; i++) {
+                ArrayList<Integer> neuKomponent = new ArrayList<>();
+            for (int j = 0; j < wegMatrix.length; j++) {
+                if (wegMatrix[i][j] == 1){
+                    neuKomponent.add(j);
+                }
+            }
+            if (!neuKomponent.isEmpty()) {
+                boolean visited = true;
+                Iterator<ArrayList<Integer>> iteratored = komponenten.iterator();
+                while (iteratored.hasNext()) {
+                    ArrayList<Integer> komponente = iteratored.next();
+                    if (komponente.containsAll(neuKomponent)) {
+                        visited = false;
+                        break;
+                    }
+                    if (neuKomponent.containsAll(komponente)) {
+                        iteratored.remove();
+                    }
+                }
+                if (visited) {
+                    komponenten.add(neuKomponent);
+                }
+            }
+        }
+
+        return komponenten;
+    }
+
+
+    public ArrayList<Integer> artikulationen(int[][] AMatrix) {
+        int nKomponenten = komponentenSuche(WMatrix(AMatrix)).size();
+        ArrayList<Integer> articulationPoints = new ArrayList<>();
+
+        for (int i = 0; i < AMatrix.length; i++) {
+
+            int[][] tmpMatrix = new int[AMatrix.length][AMatrix.length];
+
+            for (int j = 0; j < AMatrix.length; j++) {
+                for (int k = 0; k < AMatrix.length; k++) {
+                    tmpMatrix[j][k] = AMatrix[j][k];
+                }
+            }
+
+            for (int j = 0; j < AMatrix.length; j++) {
+                tmpMatrix[i][j] = 0;
+                tmpMatrix[j][i] = 0;
+            }
+
+            int modifiedComponents = komponentenSuche(WMatrix(tmpMatrix)).size();
+
+            if (modifiedComponents-1 > nKomponenten) {
+                articulationPoints.add(i);
+            }
+
+        }
+
+        return articulationPoints;
+    }
+
+    public ArrayList<ArrayList<Integer>> bruecken(int[][] AMatrix){
+        ArrayList<ArrayList<Integer>> bruecken = new ArrayList<>();
+        int nKomponenten = komponentenSuche(WMatrix(AMatrix)).size();
+
+        int[][] tmpMatrix = new int[AMatrix.length][AMatrix.length];
+
+        for (int j = 0; j < AMatrix.length; j++) {
+            for (int k = 0; k < AMatrix.length; k++) {
+                tmpMatrix[j][k] = AMatrix[j][k];
+            }
+        }
+        for (int i = 0; i < AMatrix.length; i++) {
+            for (int j = 0; j < AMatrix.length; j++) {
+                if (tmpMatrix[i][j] == 1){
+                    tmpMatrix[i][j] = 0;
+                    tmpMatrix[j][i] = 0;
+                    if (komponentenSuche(WMatrix(tmpMatrix)).size() > nKomponenten){
+                        ArrayList<Integer> bruecke = new ArrayList<>();
+                        bruecke.add(Math.min(i,j));
+                        bruecke.add(Math.max(i,j));
+                        if (!bruecken.contains(bruecke)){
+                            bruecken.add(bruecke);
+                        }
+                    }
+                    tmpMatrix[i][j] = 1;
+                    tmpMatrix[j][i] = 1;
+                }
+            }
+        }
+
+        return bruecken;
+    }
+
+
+//TODO Eulersche Linien/Zyklen
+public boolean hasEulerianPathOrCycle() {
+    int oddDegreeCount = 0;
+    for (int i = 0; i < knotenCounter; i++) {
+        int degree = 0;
+        for (int j = 0; j < knotenCounter; j++) {
+            degree += adjacentMatrix[i][j];
+        }
+        if (degree % 2 != 0) {
+            oddDegreeCount++;
         }
     }
+
+    if (oddDegreeCount > 2) {
+        return false;
+    }
+
+    return oddDegreeCount == 0 || oddDegreeCount == 2;
+}
+
+//TODO Spannbäume/Gerüste
+    public List<int[]> findSpanningTree() {
+        // Create a boolean array to mark visited vertices
+        boolean[] visited = new boolean[knotenCounter];
+        Arrays.fill(visited, false);
+
+        // Initialize a list to store edges of the spanning tree
+        List<int[]> spanningTree = new ArrayList<>();
+
+        // Perform DFS to construct the spanning tree
+        DFSForSpanningTree(0, visited, spanningTree);
+
+        return spanningTree;
+    }
+
+    private void DFSForSpanningTree(int vertex, boolean[] visited, List<int[]> spanningTree) {
+        visited[vertex] = true;
+        for (int i = 0; i < knotenCounter; i++) {
+            if (adjacentMatrix[vertex][i] != 0 && !visited[i]) {
+                spanningTree.add(new int[]{vertex, i});
+                DFSForSpanningTree(i, visited, spanningTree);
+            }
+        }
+    }
+//TODO Starke Zusammenhangskomponente
+    public boolean isZusammenHaengend() {
+        return komponentenSuche(WMatrix(adjacentMatrix)).size() == 1;
+    }
+//TODO Blöcke (schwierig!)
+public ArrayList<ArrayList<Integer>> bloecke() {
+    ArrayList<ArrayList<Integer>> blocks = new ArrayList<>();
+
+    // Find articulation points
+    ArrayList<Integer> articulationPoints = artikulationen(adjacentMatrix);
+
+    // Find bridges
+    ArrayList<ArrayList<Integer>> bridges = bruecken(adjacentMatrix);
+
+    // Create blocks based on articulation points and bridges
+    for (int i = 0; i < knotenCounter; i++) {
+        if (!articulationPoints.contains(i)) {
+            // If the vertex is not an articulation point, it's part of a block
+            ArrayList<Integer> block = new ArrayList<>();
+            block.add(i);
+
+            // Check if any bridges are connected to this vertex
+            for (ArrayList<Integer> bridge : bridges) {
+                if (bridge.contains(i)) {
+                    // Add the other vertex of the bridge to the block
+                    int otherVertex = (bridge.get(0) == i) ? bridge.get(1) : bridge.get(0);
+                    block.add(otherVertex);
+                }
+            }
+
+            blocks.add(block);
+        }
+    }
+
+    return blocks;
+}
+
+
 }
