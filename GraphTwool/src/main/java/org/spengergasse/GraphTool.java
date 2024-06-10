@@ -94,6 +94,7 @@ public class GraphTool extends JFrame {
         redrawButton = new JButton("Reload");
 
         resetButton.addActionListener(e -> {
+            AMatrix = null;
             clear();
         });
         calcButton.addActionListener(e -> {
@@ -118,6 +119,7 @@ public class GraphTool extends JFrame {
         setResizable(false);
         setTitle("Graph Tool");
 //        setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("TestImg.jpg")));
+
         setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
         setVisible(true);
     }
@@ -137,6 +139,9 @@ public class GraphTool extends JFrame {
             for (int j = i + 1; j < knotenCount; j++) {
                 if (manualGraph[i][j] != 0) {
                     kanten.add(new Kante(knoten.get(i), knoten.get(j)));
+                }else{
+                    JOptionPane.showMessageDialog(this, "ManuelGraph is Empty", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
             }
         }
@@ -203,6 +208,10 @@ public class GraphTool extends JFrame {
     private void redrawGraph() {
         clear();
         Random rnd = new Random();
+        if (AMatrix == null){
+            JOptionPane.showMessageDialog(this, "No Node found", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         for (int i = 0; i < AMatrix.length; i++) {
             Point rndPoint;
             do {
@@ -242,7 +251,7 @@ public class GraphTool extends JFrame {
                 rows.add(row);
             }
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "File not found", "Error", JOptionPane.ERROR_MESSAGE);
         }
         AMatrix = new int[rows.size()][];
         for (int i = 0; i < rows.size(); i++) {

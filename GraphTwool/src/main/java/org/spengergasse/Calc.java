@@ -10,6 +10,7 @@ public class Calc {
     private  int knotenCounter;
     private  ArrayList<Integer> artikulationen;
     private int[] exzentritaeten;
+    List<Integer> eulischerCycle = new ArrayList<>();
 
     public Calc(GraphTool graphTool) {
         this.graphTool = graphTool;
@@ -24,7 +25,9 @@ public class Calc {
         potenzMatrix = new int[knotenCounter][knotenCounter][knotenCounter];
 
         exzentrizitaeten = distanz();
-
+        if (hasEulerianPathOrCycle(adjacentMatrix)) {
+            initEulerianCycle(adjacentMatrix, 0);
+        }
         System.out.println(this);
     }
 
@@ -44,7 +47,7 @@ public class Calc {
         str.append("Artikulationen").append("\n").append(convertNumbersToLetters(artikulationen(adjacentMatrix))).append("\n");
         str.append("Bruecken").append("\n").append(convertNumbersToLetters2D(bruecken(adjacentMatrix))).append("\n");
         str.append("Blöcke").append("\n").append(convertNumbersToLetters2D(bloecke())).append("\n");
-        str.append("Has Euler Zyklus: ").append(hasEulerianPathOrCycle()).append("\n");
+        str.append("Euler Zyklus: ").append(eulischerCycle).append("\n");
         str.append("Is strongly connected: ").append(isZusammenHaengend()).append("\n");
         return str.toString();
     }
@@ -373,7 +376,7 @@ public class Calc {
 
 
 //TODO Eulersche Linien/Zyklen
-public boolean hasEulerianPathOrCycle() {
+    public boolean hasEulerianPathOrCycle(int[][] adjacentMatrix) {
     int oddDegreeCount = 0;
     for (int i = 0; i < knotenCounter; i++) {
         int degree = 0;
@@ -392,7 +395,28 @@ public boolean hasEulerianPathOrCycle() {
     return oddDegreeCount == 0 || oddDegreeCount == 2;
 }
 
-//TODO Spannbäume/Gerüste
+    public void initEulerianCycle(int[][] adjacentMatrix, int startKnoten) {
+        int[][] matrix = new int[adjacentMatrix.length][];
+        for (int i = 0; i < adjacentMatrix.length; i++) {
+            matrix[i] = adjacentMatrix[i].clone();
+        }
+
+        eulischerCycle.clear();
+        findEulerianCycleHelper(matrix, startKnoten);
+    }
+
+    private void findEulerianCycleHelper(int[][] matrix, int currentKnoten) {
+        for (int i = 0; i < knotenCounter; i++) {
+            while (matrix[currentKnoten][i] > 0) {
+                matrix[currentKnoten][i]--;
+                matrix[i][currentKnoten]--;
+                findEulerianCycleHelper(matrix, i);
+            }
+        }
+        eulischerCycle.add(currentKnoten);
+    }
+
+    //TODO Spannbäume/Gerüste
     public List<int[]> findSpanningTree() {
         // Create a boolean array to mark visited vertices
         boolean[] visited = new boolean[knotenCounter];
@@ -421,7 +445,7 @@ public boolean hasEulerianPathOrCycle() {
         return komponentenSuche(WMatrix(adjacentMatrix)).size() == 1;
     }
 //TODO Blöcke (schwierig!)
-public ArrayList<ArrayList<Integer>> bloecke() {
+    public ArrayList<ArrayList<Integer>> bloecke() {
     ArrayList<ArrayList<Integer>> blocks = new ArrayList<>();
 
     // Find articulation points
