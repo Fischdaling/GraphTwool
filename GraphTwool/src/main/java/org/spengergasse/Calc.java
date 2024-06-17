@@ -48,7 +48,8 @@ public class Calc {
         str.append("Bruecken").append("\n").append(convertNumbersToLetters2D(bruecken(adjacentMatrix))).append("\n");
         str.append("Blöcke").append("\n").append(convertNumbersToLetters2D(bloecke())).append("\n");
         str.append("Euler Zyklus: ").append(eulischerCycle).append("\n");
-        str.append("Is strongly connected: ").append(isZusammenHaengend()).append("\n");
+        str.append("Is connected: ").append(isZusammenHaengend()).append("\n");
+//        str.append("Spanning Tree: ").append(findSpanningTree());
         return str.toString();
     }
 
@@ -218,13 +219,14 @@ public class Calc {
                                     found = true;
                                     break;
                                 }
-
                             }
                             if (!found) distanceMatrix[i][j] = -9;
                         }
                     }
                 }
-                if (k == n || !changed) {break;}
+                if (k == n || !changed) {
+                    break;
+                }
                 k++;
             }
             return distanceMatrix;
@@ -375,7 +377,6 @@ public class Calc {
     }
 
 
-//TODO Eulersche Linien/Zyklen
     public boolean hasEulerianPathOrCycle(int[][] adjacentMatrix) {
     int oddDegreeCount = 0;
     for (int i = 0; i < knotenCounter; i++) {
@@ -418,14 +419,11 @@ public class Calc {
 
     //TODO Spannbäume/Gerüste
     public List<int[]> findSpanningTree() {
-        // Create a boolean array to mark visited vertices
         boolean[] visited = new boolean[knotenCounter];
         Arrays.fill(visited, false);
 
-        // Initialize a list to store edges of the spanning tree
         List<int[]> spanningTree = new ArrayList<>();
 
-        // Perform DFS to construct the spanning tree
         DFSForSpanningTree(0, visited, spanningTree);
 
         return spanningTree;
@@ -440,31 +438,24 @@ public class Calc {
             }
         }
     }
-//TODO Starke Zusammenhangskomponente
+    //TODO Starke Zusammenhangskomponente
     public boolean isZusammenHaengend() {
         return komponentenSuche(WMatrix(adjacentMatrix)).size() == 1;
     }
-//TODO Blöcke (schwierig!)
+    //TODO Blöcke (schwierig!)
     public ArrayList<ArrayList<Integer>> bloecke() {
     ArrayList<ArrayList<Integer>> blocks = new ArrayList<>();
-
-    // Find articulation points
     ArrayList<Integer> articulationPoints = artikulationen(adjacentMatrix);
 
-    // Find bridges
     ArrayList<ArrayList<Integer>> bridges = bruecken(adjacentMatrix);
 
-    // Create blocks based on articulation points and bridges
     for (int i = 0; i < knotenCounter; i++) {
         if (!articulationPoints.contains(i)) {
-            // If the vertex is not an articulation point, it's part of a block
             ArrayList<Integer> block = new ArrayList<>();
             block.add(i);
 
-            // Check if any bridges are connected to this vertex
             for (ArrayList<Integer> bridge : bridges) {
                 if (bridge.contains(i)) {
-                    // Add the other vertex of the bridge to the block
                     int otherVertex = (bridge.get(0) == i) ? bridge.get(1) : bridge.get(0);
                     block.add(otherVertex);
                 }

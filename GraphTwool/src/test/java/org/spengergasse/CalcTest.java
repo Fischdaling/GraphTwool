@@ -316,8 +316,8 @@ public class CalcTest {
 
             Assertions.assertArrayEquals(expectedDMatrix,calc.DMatrix(graphConnected));
         }
-    @Test
-    public void testDMatrix_ShouldReturnDMatrix_WhenGraphIsNotFullyConnected() {
+        @Test
+        public void testDMatrix_ShouldReturnDMatrix_WhenGraphIsNotFullyConnected() {
         Calc calc = new Calc(graphNotConnectedTool);
 
         int[][] expectedDMatrix = {
@@ -531,7 +531,5 @@ public class CalcTest {
 
             Assertions.assertEquals(expectedBruecken, calc.bruecken(graphNotConnected));
         }
-
-
 
     }
