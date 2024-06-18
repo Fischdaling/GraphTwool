@@ -5,10 +5,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.List;
 
@@ -19,8 +16,8 @@ public class GraphTool extends JFrame {
     private int[][] exportDataGraph,AMatrix;
 
     private static class Kante {
-        Point start;
-        Point end;
+        protected Point start;
+        protected Point end;
 
         Kante(Point start, Point end) {
             this.start = start;
@@ -38,7 +35,13 @@ public class GraphTool extends JFrame {
     public GraphTool(int[][] manualGraph) {
         this();
         initializeGraphFromMatrix(manualGraph);
-        redrawGraph();
+        try {
+
+            redrawGraph();
+        }catch (ArrayIndexOutOfBoundsException e) {
+            clear();
+            throw new GraphException(e.getMessage());
+        }
     }
 
     private void initializeMouseListener() {
@@ -201,7 +204,7 @@ public class GraphTool extends JFrame {
         }
     }
 
-    private void redrawGraph() {
+    public void redrawGraph() {
         clear();
         Random rnd = new Random();
         if (AMatrix == null){
@@ -225,7 +228,7 @@ public class GraphTool extends JFrame {
         repaint();
     }
 
-    private void loadGraphFromFile() {
+    public void loadGraphFromFile() {
         JFileChooser fileChooser = new JFileChooser();
         int result = fileChooser.showOpenDialog(null);
         if (result == JFileChooser.APPROVE_OPTION) {
@@ -235,33 +238,38 @@ public class GraphTool extends JFrame {
         }
     }
 
-    private void loadGraphFromCSV(String filePath) {
+    public void loadGraphFromCSV(String filePath) {
         List<int[]> rows = new ArrayList<>();
         try (Scanner scanner = new Scanner(new File(filePath))) {
             while (scanner.hasNextLine()) {
-                String[] values = scanner.nextLine().split(";");
+                String[] values = scanner.nextLine().split("[;,]");
                 int[] row = new int[values.length];
                 for (int i = 0; i < values.length; i++) {
                     row[i] = Integer.parseInt(values[i]);
                 }
                 rows.add(row);
             }
+            calculateAdjacencyMatrix();
+
         } catch (FileNotFoundException e) {
             JOptionPane.showMessageDialog(this, "File not found", "Error", JOptionPane.ERROR_MESSAGE);
         }
         AMatrix = new int[rows.size()][];
         for (int i = 0; i < rows.size(); i++) {
             AMatrix[i] = rows.get(i);
+            System.out.println(Arrays.toString(AMatrix[i]));
         }
-        redrawGraph();
+
+//        redrawGraph();
     }
 
-    private void exportGraphToCSV() {
+    public void exportGraphToCSV() {
+        calculateAdjacencyMatrix();
         if (exportDataGraph == null) {
             JOptionPane.showMessageDialog(this, "Please draw or import a graph first", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        try (FileWriter writer = new FileWriter("graphFile.csv")) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("E:\\onedrive\\Spengergasse\\3 Semester\\PosTheorie\\GraphTool\\graphFile.csv"))) {
             for (int[] row : exportDataGraph) {
                 for (int j = 0; j < row.length; j++) {
                     writer.write(row[j] + (j < row.length - 1 ? ";" : ""));
@@ -330,7 +338,7 @@ public class GraphTool extends JFrame {
                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1},
                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0},
         };
-        new GraphTool(graphNotConnected);
+        new GraphTool(graphConnected);
     }
 
 

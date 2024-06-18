@@ -532,4 +532,111 @@ public class CalcTest {
             Assertions.assertEquals(expectedBruecken, calc.bruecken(graphNotConnected));
         }
 
+        //Edgecases
+
+    @Test
+    public void testNoEdgesGraph() {
+        int[][] graph = {
+                {0, 0, 0},
+                {0, 0, 0},
+                {0, 0, 0}
+        };
+        GraphTool graphTool = new GraphTool(graph);
+        assertEquals(3, graphTool.getKnotenCounter(), "Number of nodes should be 3");
+        assertArrayEquals(graph, graphTool.getAMatrix(), "Adjacency matrix should match the input matrix");
+    }
+
+    @Test
+    public void testSingleNodeGraph() {
+        int[][] graph = {
+                {0}
+        };
+        GraphTool graphTool = new GraphTool(graph);
+        assertEquals(1, graphTool.getKnotenCounter(), "Number of nodes should be 1");
+        assertArrayEquals(graph, graphTool.getAMatrix(), "Adjacency matrix should match the input matrix");
+    }
+
+    @Test
+    public void testLinearGraph() {
+        int[][] graph = {
+                {0, 1, 0, 0},
+                {1, 0, 1, 0},
+                {0, 1, 0, 1},
+                {0, 0, 1, 0}
+        };
+        GraphTool graphTool = new GraphTool(graph);
+        assertEquals(4, graphTool.getKnotenCounter(), "Number of nodes should be 4");
+        assertArrayEquals(graph, graphTool.getAMatrix(), "Adjacency matrix should match the input matrix");
+    }
+
+    @Test
+    public void testCompleteGraph() {
+        int[][] graph = {
+                {0, 1, 1, 1},
+                {1, 0, 1, 1},
+                {1, 1, 0, 1},
+                {1, 1, 1, 0}
+        };
+        GraphTool graphTool = new GraphTool(graph);
+        assertEquals(4, graphTool.getKnotenCounter(), "Number of nodes should be 4");
+        assertArrayEquals(graph, graphTool.getAMatrix(), "Adjacency matrix should match the input matrix");
+    }
+
+    @Test
+    public void testTreeGraph() {
+        int[][] graph = {
+                {0, 1, 1, 0, 0},
+                {1, 0, 0, 1, 0},
+                {1, 0, 0, 0, 1},
+                {0, 1, 0, 0, 0},
+                {0, 0, 1, 0, 0}
+        };
+        GraphTool graphTool = new GraphTool(graph);
+        assertEquals(5, graphTool.getKnotenCounter(), "Number of nodes should be 5");
+        assertArrayEquals(graph, graphTool.getAMatrix(), "Adjacency matrix should match the input matrix");
+    }
+
+    @Test
+    public void testEmptyGraph() {
+        GraphTool graphTool = new GraphTool();
+        assertEquals(0, graphTool.getKnotenCounter(), "Number of nodes should be 0");
+        assertNull(graphTool.getAMatrix(), "Adjacency matrix should be null");
+    }
+
+    @Test
+    public void testGraphRedraw() {
+        int[][] graph = {
+                {0, 1, 0},
+                {1, 0, 1},
+                {0, 1, 0}
+        };
+        GraphTool graphTool = new GraphTool(graph);
+        assertDoesNotThrow(graphTool::redrawGraph, "Redrawing graph should not throw any exceptions");
+    }
+
+    @Test
+    public void testExportGraphToCSV() {
+        int[][] graph = {
+                {0, 1, 1},
+                {1, 0, 1},
+                {1, 1, 0}
+        };
+        GraphTool graphTool = new GraphTool(graph);
+        graphTool.exportGraphToCSV();
+        graphTool.loadGraphFromCSV("E:\\onedrive\\Spengergasse\\3 Semester\\PosTheorie\\GraphTool\\graphFile.csv");
+        assertArrayEquals(graph, graphTool.getAMatrix(), "Adjacency matrix should match the input matrix after export and import");
+    }
+
+    @Test
+    public void testLoadGraphFromCSV() {
+        GraphTool graphTool = new GraphTool();
+        graphTool.loadGraphFromCSV("src/main/resources/testGraph.csv");
+        int[][] expectedGraph = {
+                {0, 1, 0},
+                {1, 0, 1},
+                {0, 1, 0}
+        };
+        assertArrayEquals(expectedGraph, graphTool.getAMatrix(), "Loaded adjacency matrix should match the expected matrix from CSV file");
+    }
+
     }

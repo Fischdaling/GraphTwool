@@ -24,7 +24,7 @@ public class Calc {
         artikulationen = new ArrayList<>();
         potenzMatrix = new int[knotenCounter][knotenCounter][knotenCounter];
 
-        exzentrizitaeten = distanz();
+        exzentrizitaeten = exzentritaeten();
         if (hasEulerianPathOrCycle(adjacentMatrix)) {
             initEulerianCycle(adjacentMatrix, 0);
         }
@@ -130,17 +130,17 @@ public class Calc {
     int[][][] potenzMatrix(int[][] matrix) {
         int[][] AXMatrix = matrix;
         int[][] OldAXMatrix = matrix;
-        for (int k = 2; k < matrix.length; k++) {
+        for (int potenz = 2; potenz < matrix.length; potenz++) {
             int[][] tempMatrix = new int[matrix.length][matrix.length];
-            for (int i = 0; i < matrix.length; i++) {
-                for (int j = 0; j < matrix.length; j++) {
+            for (int row = 0; row < matrix.length; row++) {
+                for (int spalte = 0; spalte < matrix.length; spalte++) {
                     for (int x = 0; x < matrix.length; x++) {
-                        tempMatrix[i][j] += OldAXMatrix[i][x] * AXMatrix[x][j];
+                        tempMatrix[row][spalte] += OldAXMatrix[row][x] * AXMatrix[x][spalte];
                     }
                 }
             }
             OldAXMatrix = tempMatrix;
-            potenzMatrix[k] = OldAXMatrix;
+            potenzMatrix[potenz] = OldAXMatrix;
         }
         return potenzMatrix;
     }
@@ -167,7 +167,7 @@ public class Calc {
                 for (int j = 0; j < n; j++) {
                     if (wegMatrix[i][j] == 0) {
                         boolean found = false;
-                        for (int p = 2; p <= k; p++) {
+                        for (int p = 0; p <= k; p++) {
                             if (potenzMatrix[p][i][j] != 0) {
                                 wegMatrix[i][j] = 1;
                                 changed = true;
@@ -187,7 +187,6 @@ public class Calc {
     }
 
     public int[][] DMatrix(int[][] matrix ) {
-        /** INIT **/
         int[][][] potenzMatrix = potenzMatrix(matrix);
         int n = matrix.length;
         int[][] distanceMatrix = new int[n][n];
@@ -211,16 +210,13 @@ public class Calc {
                 for (int i = 0; i < n; i++) {
                     for (int j = 0; j < n; j++) {
                         if (distanceMatrix[i][j] == -9) {
-                            boolean found = false;
-                            for (int p = 2; p <= k; p++) {
+                            for (int p = 0; p <= k; p++) {
                                 if (potenzMatrix[p][i][j] != 0) {
                                     distanceMatrix[i][j] = p;
                                     changed = true;
-                                    found = true;
                                     break;
                                 }
                             }
-                            if (!found) distanceMatrix[i][j] = -9;
                         }
                     }
                 }
@@ -232,7 +228,7 @@ public class Calc {
             return distanceMatrix;
     }
 
-    public int[] distanz(){
+    public int[] exzentritaeten(){
         if (!isZusammenHaengend())
             return null;
         int[] distanz = new int[knotenCounter];
@@ -408,9 +404,9 @@ public class Calc {
 
     private void findEulerianCycleHelper(int[][] matrix, int currentKnoten) {
         for (int i = 0; i < knotenCounter; i++) {
-            while (matrix[currentKnoten][i] > 0) {
-                matrix[currentKnoten][i]--;
-                matrix[i][currentKnoten]--;
+            while (matrix[currentKnoten][i] != 0) {
+                matrix[currentKnoten][i] = 0;
+                matrix[i][currentKnoten] = 0;
                 findEulerianCycleHelper(matrix, i);
             }
         }
@@ -428,7 +424,6 @@ public class Calc {
 
         return spanningTree;
     }
-
     private void DFSForSpanningTree(int vertex, boolean[] visited, List<int[]> spanningTree) {
         visited[vertex] = true;
         for (int i = 0; i < knotenCounter; i++) {
