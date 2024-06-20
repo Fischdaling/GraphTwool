@@ -4,11 +4,11 @@ import java.util.*;
 
 public class Calc {
     private  GraphTool graphTool;
-    private  int[][][] potenzMatrix;
-    private  int[][] adjacentMatrix;
-    private  int[] exzentrizitaeten;
-    private  int knotenCounter;
-    private  ArrayList<Integer> artikulationen;
+    private final int[][][] potenzMatrix;
+    private final int[][] adjacentMatrix;
+    private final int[] exzentrizitaeten;
+    private final int knotenCounter;
+    private final ArrayList<Integer> artikulationen;
     private int[] exzentritaeten;
     List<Integer> eulischerCycle = new ArrayList<>();
 
@@ -192,7 +192,7 @@ public class Calc {
         int[][] distanceMatrix = new int[n][n];
 
         for (int i = 0; i < n; i++) {
-            Arrays.fill(distanceMatrix[i], -9); // -9 Statt Unendlich
+            Arrays.fill(distanceMatrix[i], -9);
             distanceMatrix[i][i] = 0;
         }
 
@@ -279,28 +279,30 @@ public class Calc {
     public ArrayList<ArrayList<Integer>> komponentenSuche(int[][] wegMatrix) {
         ArrayList<ArrayList<Integer>> komponenten = new ArrayList<>();
 
-        for (int i = 0; i < wegMatrix.length; i++) {
-                ArrayList<Integer> neuKomponent = new ArrayList<>();
+
+        for (int currentNode = 0; currentNode < wegMatrix.length; currentNode++) {
+                ArrayList<Integer> connectedToCurrentNode = new ArrayList<>();
             for (int j = 0; j < wegMatrix.length; j++) {
-                if (wegMatrix[i][j] == 1){
-                    neuKomponent.add(j);
+                boolean isConnectedToCurrentNode = wegMatrix[currentNode][j] == 1;
+                if (isConnectedToCurrentNode){
+                    connectedToCurrentNode.add(j);
                 }
             }
-            if (!neuKomponent.isEmpty()) {
-                boolean visited = true;
+            if (!connectedToCurrentNode.isEmpty()) {
+                boolean isNewComponent = true;
                 Iterator<ArrayList<Integer>> iteratored = komponenten.iterator();
                 while (iteratored.hasNext()) {
                     ArrayList<Integer> komponente = iteratored.next();
-                    if (komponente.containsAll(neuKomponent)) {
-                        visited = false;
+                    if (komponente.containsAll(connectedToCurrentNode)) {
+                        isNewComponent = false;
                         break;
                     }
-                    if (neuKomponent.containsAll(komponente)) {
+                    if (connectedToCurrentNode.containsAll(komponente)) {
                         iteratored.remove();
                     }
                 }
-                if (visited) {
-                    komponenten.add(neuKomponent);
+                if (isNewComponent) {
+                    komponenten.add(connectedToCurrentNode);
                 }
             }
         }
@@ -404,7 +406,7 @@ public class Calc {
 
     private void findEulerianCycleHelper(int[][] matrix, int currentKnoten) {
         for (int i = 0; i < knotenCounter; i++) {
-            while (matrix[currentKnoten][i] != 0) {
+            if (matrix[currentKnoten][i] != 0) {
                 matrix[currentKnoten][i] = 0;
                 matrix[i][currentKnoten] = 0;
                 findEulerianCycleHelper(matrix, i);
@@ -462,6 +464,4 @@ public class Calc {
 
     return blocks;
 }
-
-
 }
